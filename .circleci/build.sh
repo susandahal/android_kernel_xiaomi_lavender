@@ -1,18 +1,18 @@
 #!/bin/bash
 echo "Cloning dependencies"
-git clone --depth=1 -b old-cam https://github.com/stormbreaker-project/android_kernel_xiaomi_lavender kernel
+git clone --depth=1 -b rebase-oldcam https://github.com/stormbreaker-project/android_kernel_xiaomi_lavender kernel
 cd kernel
-git clone --depth=1 https://github.com/crDroidMod/android_prebuilts_clang_host_linux-x86_clang-6032204 clang
-git clone --depth=1 https://github.com/KudProject/arm-linux-androideabi-4.9 gcc32
-git clone --depth=1 https://github.com/KudProject/aarch64-linux-android-4.9 gcc
+git clone --depth=1 -b master https://github.com/kdrag0n/proton-clang clang
 git clone https://github.com/sohamxda7/Anykernel3.git -b lavender --depth=1 AnyKernel
 echo "Done"
 KERNEL_DIR=$(pwd)
 IMAGE="${KERNEL_DIR}/out/arch/arm64/boot/Image.gz-dtb"
 TANGGAL=$(date +"%Y%m%d-%H")
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-PATH="${KERNEL_DIR}/clang/bin:${KERNEL_DIR}/gcc/bin:${KERNEL_DIR}/gcc32/bin:${PATH}"
-export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')"
+export PATH="$(pwd)/clang/bin:$PATH"
+export LD="$(pwd)/clang/bin/ld.lld"
+export LD_LIBRARY_PATH="$(pwd)/clang/lib:$(pwd)/clang/lib64:$LD_LIBRARY_PATH"
+export KBUILD_COMPILER_STRING="$($kernel/clang/bin/clang --version | head -n 1 | perl -pe 's/\((?:http|git).*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' -e 's/^.*clang/clang/')"
 export ARCH=arm64
 export KBUILD_BUILD_USER=sohamsen
 export KBUILD_BUILD_HOST=circleci
@@ -59,10 +59,17 @@ function compile() {
     make -j$(nproc) O=out ARCH=arm64 lavender-perf_defconfig
     make -j$(nproc) O=out \
                     ARCH=arm64 \
-                    CC=clang \
-                    CLANG_TRIPLE=aarch64-linux-gnu- \
-                    CROSS_COMPILE=aarch64-linux-android- \
-                    CROSS_COMPILE_ARM32=arm-linux-androideabi-
+                      CC=clang \
+                      LD=ld.lld \
+                      CLANG_TRIPLE=aarch64-linux-gnu- \
+                      CROSS_COMPILE=aarch64-linux-gnu- \
+                      CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+                      LLVM="llvm-" \
+                      AR=llvm-ar \
+                      NM=llvm-nm \
+                      OBJCOPY=llvm-objcopy \
+                      OBJDUMP=llvm-objdump \
+                      STRIP=llvm-strip
 
     if ! [ -a "$IMAGE" ]; then
         finerr
