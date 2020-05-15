@@ -10,8 +10,6 @@ IMAGE="${KERNEL_DIR}/out/arch/arm64/boot/Image.gz-dtb"
 TANGGAL=$(date +"%Y%m%d-%H")
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 export PATH="$(pwd)/clang/bin:$PATH"
-export LD="$(pwd)/clang/bin/ld.lld"
-export LD_LIBRARY_PATH="$(pwd)/clang/lib:$(pwd)/clang/lib64:$LD_LIBRARY_PATH"
 export KBUILD_COMPILER_STRING="$($kernel/clang/bin/clang --version | head -n 1 | perl -pe 's/\((?:http|git).*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' -e 's/^.*clang/clang/')"
 export ARCH=arm64
 export KBUILD_BUILD_USER=sohamsen
@@ -60,16 +58,8 @@ function compile() {
     make -j$(nproc) O=out \
                     ARCH=arm64 \
                       CC=clang \
-                      LD=ld.lld \
-                      CLANG_TRIPLE=aarch64-linux-gnu- \
                       CROSS_COMPILE=aarch64-linux-gnu- \
                       CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-                      LLVM="llvm-" \
-                      AR=llvm-ar \
-                      NM=llvm-nm \
-                      OBJCOPY=llvm-objcopy \
-                      OBJDUMP=llvm-objdump \
-                      STRIP=llvm-strip
 
     if ! [ -a "$IMAGE" ]; then
         finerr
