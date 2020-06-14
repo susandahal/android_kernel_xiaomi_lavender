@@ -507,6 +507,7 @@ int msm_camera_put_clk_info(struct platform_device *pdev,
 {
 	int rc = 0;
 
+
 	if (!pdev || (&pdev->dev == NULL) || !clk_info || !clk_ptr)
 		return -EINVAL;
 
